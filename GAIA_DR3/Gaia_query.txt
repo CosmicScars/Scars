@@ -1,1 +1,117 @@
+﻿https://gea.esac.esa.int/archive/
+query in Search/ Advanced 
 
+
+SELECT 
+    source_id, 
+    ra, 
+    dec, 
+    parallax, 
+    pmra, 
+    pmdec, 
+    radial_velocity,
+    phot_g_mean_mag,
+    DISTANCE(
+        POINT(ra, dec),
+        POINT(266.4051, -28.9361)  -- Centro galáctico (Sgr A*)
+    ) AS dist_deg,
+    DEGREES(ASIN(
+        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
+        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
+    )) AS b  -- Latitud galáctica
+FROM 
+    gaiadr3.gaia_source
+WHERE 
+    parallax > 0.05  -- Hasta ~20 kpc (1/0.05)
+    AND parallax_over_error > 5  -- Balance precisión-cobertura
+    AND radial_velocity IS NOT NULL  -- Imprescindible para velocidad 3D
+    AND phot_g_mean_mag < 18  -- Incluye estrellas débiles del halo
+    AND ABS(DEGREES(ASIN(
+        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
+        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
+    ))) > 30  -- |b| > 30° (halo, evitando el disco)
+    AND astrometric_params_solved = 31  -- Soluciones astrométricas completas
+
+
+============================
+SELECT 
+    source_id,
+    ra,
+    dec,
+    parallax,
+    parallax_error,  -- Necesaria para calcular parallax_over_error
+    parallax_over_error,  -- Crítica para filtrar datos precisos
+    pmra,
+    pmra_error,
+    pmdec,
+    pmdec_error,
+    radial_velocity,
+    radial_velocity_error,
+    phot_g_mean_mag,
+    phot_g_mean_flux_over_error,
+    astrometric_params_solved,  -- Para calidad astrométrica
+    DISTANCE(
+        POINT(ra, dec),
+        POINT(266.4051, -28.9361)  -- Centro galáctico (Sgr A*)
+    ) AS dist_deg,
+    DEGREES(ASIN(
+        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
+        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
+    )) AS b  -- Latitud galáctica
+FROM 
+    gaiadr3.gaia_source
+WHERE 
+    parallax > 0.05  -- Distancias < 20 kpc
+    AND parallax_over_error > 10  -- Solo datos de alta precisión
+    AND radial_velocity IS NOT NULL  -- Fundamental para velocidad 3D
+    AND phot_g_mean_mag < 18  -- Estrellas débiles del halo
+    AND ABS(DEGREES(ASIN(
+        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
+        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
+    )) > 30  -- |b| > 30° (halo)
+    AND astrometric_params_solved = 31  -- Soluciones astrométricas completas
+
+
+=========
+FUNCTIONAL:
+==========
+SELECT 
+    source_id,
+    ra,
+    dec,
+    parallax,
+    parallax_error,
+    parallax_over_error,
+    pmra,
+    pmra_error,
+    pmdec,
+    pmdec_error,
+    radial_velocity,
+    radial_velocity_error,
+    phot_g_mean_mag,
+    phot_g_mean_flux_over_error,
+    astrometric_params_solved,
+    DISTANCE(
+        POINT(ra, dec),
+        POINT(266.4051, -28.9361)
+    ) AS dist_deg,
+    DEGREES(ASIN(
+        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
+        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
+    )) AS b
+FROM 
+    gaiadr3.gaia_source
+WHERE 
+    parallax > 0.05
+    AND parallax_over_error > 10
+    AND radial_velocity IS NOT NULL
+    AND phot_g_mean_mag < 18
+    AND ABS(
+        DEGREES(
+            ASIN(
+                SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
+                COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
+            )
+        )
+    ) > 30
+    AND astrometric_params_solved = 31
