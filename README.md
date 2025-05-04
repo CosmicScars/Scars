@@ -14,7 +14,8 @@
 
           - Currently there is a code that generates a image with graphs that correlates two NGC galaxies using real data with Scars model and the Milky Way using sinthetic data with Scars model
           - Another code use Eilers real Milky Way stars rotation speed and kpc from galaxy centre vs Scars model and LambdaCDM model
-          - Gaia DR3 data can be extracted from https://gea.esac.esa.int/archive/ ,click SEARCH and Advanced. Use the query provided in GAIA_DR3 folder. Alternativelly .csv with raw data is uploaded. Each record is a Star. To use proper units as kpc from galactic centre or rotation speed is key. Noise expected from 0 to 5kpc. Chaotic data beyond 25kpc. Ideal graph- 0 to 100 kpc. Realistic: 5 to 30 kpc. Modify `scars_MW()` function to fit better
+          - Gaia DR3 data can be extracted from https://gea.esac.esa.int/archive/  ## SEARCH ## Advanced ADQL
+               Use the query provided in GAIA_DR3 folder as an example. That query extracts stars from 5kpc to 5.5kpc from galactic center. A sample of the result can be find here. Each record is a Star. To use proper units as kpc from galactic centre or rotation speed is key. Noise expected from 0 to 5kpc. Chaotic data beyond 25kpc. Ideal graph- 0 to 100 kpc. Realistic: 5 to 30 kpc. Modify `scars_MW()` function to fit better
                Result: improve mw_rotation_final.png
 
      
