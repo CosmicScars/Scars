@@ -1,0 +1,24 @@
+Field Name         Description                                  Units
+---------          -----------                                  -----
+source_id          Unique Gaia source identifier                -
+ra                 Right Ascension (J2000)                      degrees
+dec                Declination (J2000)                          degrees
+l                  Galactic longitude                           degrees
+b                  Galactic latitude                            degrees
+dist_sol_pc        Distance from the Sun                        parsecs (pc)
+vel_rad_km_s       Radial velocity (positive = receding)        km/s
+pmra               Proper motion in RA                          mas/year
+pmdec              Proper motion in Dec                         mas/year
+phot_g_mean_mag    Mean G-band magnitude                        mag (apparent)
+bp_rp              BP-RP color index                            mag (color)
+dist_centro_kpc    Distance from Galactic Center                kiloparsecs (kpc)
+
+Key notes:
+
+Proper motions (pmra/pmdec) are in milliarcseconds per year
+
+BP-RP color is a proxy for stellar temperature/metallicity
+
+Galactic coordinates (l,b) use the IAU 1958 system
+
+All astrometric values are from Gaia DR3
