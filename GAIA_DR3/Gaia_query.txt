@@ -1,117 +1,32 @@
 ﻿https://gea.esac.esa.int/archive/
 query in Search/ Advanced 
 
+method:  run a query for every halp kpc from 4kpc to 50kpc in Gaia Archive (Gaia has 1.5 billion stars but online search returns only up to 3 million). For the study, at least 15000 every kpc is necessary.
+method:  use astronomy.gaia lib in PY and access the ddbb directly though a free ESA account is needed.
 
-SELECT 
-    source_id, 
-    ra, 
-    dec, 
-    parallax, 
-    pmra, 
-    pmdec, 
-    radial_velocity,
-    phot_g_mean_mag,
-    DISTANCE(
-        POINT(ra, dec),
-        POINT(266.4051, -28.9361)  -- Centro galáctico (Sgr A*)
-    ) AS dist_deg,
-    DEGREES(ASIN(
-        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
-        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
-    )) AS b  -- Latitud galáctica
-FROM 
-    gaiadr3.gaia_source
+– extracting up to 30000 stars within filter conditions
+SELECT TOP 30000
+  source_id, ra, dec, l, b, 
+  distance_gspphot as dist_sol_pc,
+  radial_velocity as vel_rad_km_s,
+  pmra, pmdec,
+  phot_g_mean_mag, bp_rp,
+– distance to galactic centre calculation
+  SQRT(
+    POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
+    POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
+    POWER(distance_gspphot * SIN(RADIANS(b)), 2)
+  ) / 1000 AS dist_centro_kpc
+— filtering from 5 to 6kpc
+FROM gaiadr3.gaia_source
 WHERE 
-    parallax > 0.05  -- Hasta ~20 kpc (1/0.05)
-    AND parallax_over_error > 5  -- Balance precisión-cobertura
-    AND radial_velocity IS NOT NULL  -- Imprescindible para velocidad 3D
-    AND phot_g_mean_mag < 18  -- Incluye estrellas débiles del halo
-    AND ABS(DEGREES(ASIN(
-        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
-        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
-    ))) > 30  -- |b| > 30° (halo, evitando el disco)
-    AND astrometric_params_solved = 31  -- Soluciones astrométricas completas
-
-
-============================
-SELECT 
-    source_id,
-    ra,
-    dec,
-    parallax,
-    parallax_error,  -- Necesaria para calcular parallax_over_error
-    parallax_over_error,  -- Crítica para filtrar datos precisos
-    pmra,
-    pmra_error,
-    pmdec,
-    pmdec_error,
-    radial_velocity,
-    radial_velocity_error,
-    phot_g_mean_mag,
-    phot_g_mean_flux_over_error,
-    astrometric_params_solved,  -- Para calidad astrométrica
-    DISTANCE(
-        POINT(ra, dec),
-        POINT(266.4051, -28.9361)  -- Centro galáctico (Sgr A*)
-    ) AS dist_deg,
-    DEGREES(ASIN(
-        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
-        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
-    )) AS b  -- Latitud galáctica
-FROM 
-    gaiadr3.gaia_source
-WHERE 
-    parallax > 0.05  -- Distancias < 20 kpc
-    AND parallax_over_error > 10  -- Solo datos de alta precisión
-    AND radial_velocity IS NOT NULL  -- Fundamental para velocidad 3D
-    AND phot_g_mean_mag < 18  -- Estrellas débiles del halo
-    AND ABS(DEGREES(ASIN(
-        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
-        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
-    )) > 30  -- |b| > 30° (halo)
-    AND astrometric_params_solved = 31  -- Soluciones astrométricas completas
-
-
-=========
-FUNCTIONAL:
-==========
-SELECT 
-    source_id,
-    ra,
-    dec,
-    parallax,
-    parallax_error,
-    parallax_over_error,
-    pmra,
-    pmra_error,
-    pmdec,
-    pmdec_error,
-    radial_velocity,
-    radial_velocity_error,
-    phot_g_mean_mag,
-    phot_g_mean_flux_over_error,
-    astrometric_params_solved,
-    DISTANCE(
-        POINT(ra, dec),
-        POINT(266.4051, -28.9361)
-    ) AS dist_deg,
-    DEGREES(ASIN(
-        SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
-        COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
-    )) AS b
-FROM 
-    gaiadr3.gaia_source
-WHERE 
-    parallax > 0.05
-    AND parallax_over_error > 10
-    AND radial_velocity IS NOT NULL
-    AND phot_g_mean_mag < 18
-    AND ABS(
-        DEGREES(
-            ASIN(
-                SIN(RADIANS(dec)) * COS(RADIANS(62.6)) - 
-                COS(RADIANS(dec)) * SIN(RADIANS(ra - 282.25)) * SIN(RADIANS(62.6))
-            )
-        )
-    ) > 30
-    AND astrometric_params_solved = 31
+  SQRT(
+    POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
+    POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
+    POWER(distance_gspphot * SIN(RADIANS(b)), 2)
+  ) BETWEEN 5000 AND 6000 -- distance to galactic centre
+  AND parallax_over_error > 5
+  AND phot_g_mean_mag < 18
+  AND bp_rp IS NOT NULL
+  AND radial_velocity IS NOT NULL
+ORDER BY random_index
