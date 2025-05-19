@@ -1,32 +1,211 @@
 ﻿https://gea.esac.esa.int/archive/
 query in Search/ Advanced 
 
-method:  run a query for every halp kpc from 4kpc to 50kpc in Gaia Archive (Gaia has 1.5 billion stars but online search returns only up to 3 million). For the study, at least 15000 every kpc is necessary.
-method:  use astronomy.gaia lib in PY and access the ddbb directly though a free ESA account is needed.
+method 1:  run a query for every 0.1kpc from 4kpc to >15kpc in Gaia Archive (Gaia has 1.5 billion stars but online search returns only up to 3 million). Result is downloaded in csv format 
+method 2:  use astronomy.gaia lib in PY and access the ddbb directly though a free ESA account is needed.
 
-– extracting up to 30000 stars within filter conditions
-SELECT TOP 30000
-  source_id, ra, dec, l, b, 
+We used method 1 and manually adjusted the key parameters as necessary
+
+Parameters that may be adjusted to gather significant stars and avoid noise:
+  parallax_over_error > 15      -- Precision vs Statiscics balance
+  ABS(b) < 6                    -- disk size
+  radial_velocity_error < 3     -- ultra fine measurements
+  bp_rp < 1.2                   -- Giant stars mostly excluded
+  phot_g_mean_mag < 16          -- only brilliant stars
+  ruwe < 1.2                    -- High quality astrometry
+
+  
+
+example:  Query used from 6kpc to 6.9kpc, launched 10 times:
+BETWEEN 6000 AND 6099
+BETWEEN 6100 AND 6199
+...
+BETWEEN 6900 AND 6999
+
+The result are 10 files like "gaia-6000-6099-result.csv"...
+
+SELECT TOP 100000
+  source_id, ra, dec, l, b,
   distance_gspphot as dist_sol_pc,
   radial_velocity as vel_rad_km_s,
   pmra, pmdec,
   phot_g_mean_mag, bp_rp,
-– distance to galactic centre calculation
-  SQRT(
-    POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
-    POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
-    POWER(distance_gspphot * SIN(RADIANS(b)), 2)
-  ) / 1000 AS dist_centro_kpc
-— filtering from 5 to 6kpc
+  SQRT(POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
+       POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
+       POWER(distance_gspphot * SIN(RADIANS(b)), 2)) / 1000 AS dist_centro_kpc
 FROM gaiadr3.gaia_source
-WHERE 
-  SQRT(
+WHERE
+    SQRT(
     POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
     POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
     POWER(distance_gspphot * SIN(RADIANS(b)), 2)
-  ) BETWEEN 5000 AND 6000 -- distance to galactic centre
-  AND parallax_over_error > 5
-  AND phot_g_mean_mag < 18
-  AND bp_rp IS NOT NULL
-  AND radial_velocity IS NOT NULL
+  ) BETWEEN 6000 AND 6099
+    and parallax_over_error > 20
+  AND radial_velocity_error < 1.4
+  AND bp_rp < 0.9
+  AND phot_g_mean_mag < 14
+  AND ABS(b) < 5
+  AND ruwe < 1
 ORDER BY random_index
+
+
+
+example:  Query used from 7kpc to 7.9kpc, launched 10 times *** key bin as this is the scar we were looking for!!
+BETWEEN 7000 AND 7099
+BETWEEN 7100 AND 7199
+...
+BETWEEN 7900 AND 7999
+
+The result are 10 files like "gaia-7000-6099-result.csv"...
+
+SELECT TOP 100000
+  source_id, ra, dec, l, b,
+  distance_gspphot as dist_sol_pc,
+  radial_velocity as vel_rad_km_s,
+  pmra, pmdec,
+  phot_g_mean_mag, bp_rp,
+  ruwe,
+  ipd_gof_harmonic_amplitude,
+   SQRT(POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
+       POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
+       POWER(distance_gspphot * SIN(RADIANS(b)), 2)) / 1000 AS dist_centro_kpc
+FROM gaiadr3.gaia_source
+WHERE
+    SQRT(
+    POWER(8178 - (distance_gspphot * COS(RADIANS(l)) * COS(RADIANS(b))), 2) + 
+    POWER(distance_gspphot * SIN(RADIANS(l)) * COS(RADIANS(b)), 2) + 
+    POWER(distance_gspphot * SIN(RADIANS(b)), 2)
+  ) BETWEEN 7000 AND 7099
+  AND parallax_over_error > 15
+  AND radial_velocity_error < 5
+  AND bp_rp < 1.2
+  AND phot_g_mean_mag < 16.0
+  AND ABS(b) < 6
+  AND ruwe < 1.2
+ORDER BY random_index
+
+
+CSV files content:
+Example of rows
+source_id	ra	dec	l	b	dist_sol_pc	vel_rad_km_s	pmra	pmdec	phot_g_mean_mag	bp_rp	dist_centro_kpc
+0	5916149538513557376	260.605818	-57.964588	333.056742	-11.991307	6969.9097	-110.00953	-1.567655	-5.012845	13.748738	1.275593	4.006380
+1	6649982256214124032	279.583075	-55.258351	340.256577	-20.225053	5898.3657	-42.07300	-4.511373	-5.037838	14.233786	1.344318	4.057913
+2	5921584939884351104	264.019093	-53.641329	337.840572	-11.351536	5314.1910	-68.48103	-4.650656	-3.418985	14.091764	1.346888	4.024442
+
+Results:
+Dispersión 10099-result.csv vel_rad: 53.4 km/s | Estrellas: 16,511 ## 10000 to 10099 parsecs
+Dispersión 10199-result.csv vel_rad: 53.6 km/s | Estrellas: 15,073
+Dispersión 10299-result.csv vel_rad: 52.8 km/s | Estrellas: 14,316
+Dispersión 10399-result.csv vel_rad: 52.8 km/s | Estrellas: 12,784
+Dispersión 10499-result.csv vel_rad: 52.9 km/s | Estrellas: 11,367
+Dispersión 10599-result.csv vel_rad: 52.0 km/s | Estrellas: 9,932
+Dispersión 10699-result.csv vel_rad: 52.0 km/s | Estrellas: 8,844
+Dispersión 10799-result.csv vel_rad: 52.2 km/s | Estrellas: 7,782
+Dispersión 10899-result.csv vel_rad: 52.1 km/s | Estrellas: 6,600
+Dispersión 10999-result.csv vel_rad: 53.8 km/s | Estrellas: 5,707
+Dispersión 11099-result.csv vel_rad: 54.1 km/s | Estrellas: 5,180
+Dispersión 11199-result.csv vel_rad: 53.4 km/s | Estrellas: 4,563
+Dispersión 11299-result.csv vel_rad: 53.0 km/s | Estrellas: 4,034
+Dispersión 11399-result.csv vel_rad: 54.4 km/s | Estrellas: 3,531
+Dispersión 11499-result.csv vel_rad: 55.2 km/s | Estrellas: 3,319
+Dispersión 11599-result.csv vel_rad: 55.5 km/s | Estrellas: 2,933
+Dispersión 11699-result.csv vel_rad: 53.0 km/s | Estrellas: 2,630
+Dispersión 11799-result.csv vel_rad: 54.7 km/s | Estrellas: 2,307
+Dispersión 11899-result.csv vel_rad: 55.9 km/s | Estrellas: 2,218
+Dispersión 11999-result.csv vel_rad: 60.7 km/s | Estrellas: 4,196
+Dispersión 12099-result.csv vel_rad: 60.6 km/s | Estrellas: 3,816
+Dispersión 12199-result.csv vel_rad: 59.2 km/s | Estrellas: 3,426
+Dispersión 12299-result.csv vel_rad: 60.2 km/s | Estrellas: 3,103
+Dispersión 12399-result.csv vel_rad: 61.4 km/s | Estrellas: 2,799
+Dispersión 12499-result.csv vel_rad: 62.3 km/s | Estrellas: 2,538
+Dispersión 12599-result.csv vel_rad: 62.9 km/s | Estrellas: 2,304
+Dispersión 12699-result.csv vel_rad: 60.6 km/s | Estrellas: 2,033
+Dispersión 12799-result.csv vel_rad: 66.8 km/s | Estrellas: 3,927
+Dispersión 12899-result.csv vel_rad: 66.6 km/s | Estrellas: 3,585
+Dispersión 12999-result.csv vel_rad: 65.8 km/s | Estrellas: 3,412
+Dispersión 13099-result.csv vel_rad: 68.3 km/s | Estrellas: 2,975
+Dispersión 13199-result.csv vel_rad: 66.8 km/s | Estrellas: 2,732
+Dispersión 13299-result.csv vel_rad: 66.7 km/s | Estrellas: 2,475
+Dispersión 13399-result.csv vel_rad: 66.6 km/s | Estrellas: 2,311
+Dispersión 13499-result.csv vel_rad: 67.0 km/s | Estrellas: 2,132
+Dispersión 13599-result.csv vel_rad: 69.1 km/s | Estrellas: 1,941
+Dispersión 13699-result.csv vel_rad: 66.8 km/s | Estrellas: 1,737
+Dispersión 13799-result.csv vel_rad: 68.9 km/s | Estrellas: 1,551
+Dispersión 13899-result.csv vel_rad: 68.8 km/s | Estrellas: 1,375
+Dispersión 13999-result.csv vel_rad: 67.1 km/s | Estrellas: 1,278
+Dispersión 14099-result.csv vel_rad: 68.8 km/s | Estrellas: 1,155
+Dispersión 14199-result.csv vel_rad: 65.5 km/s | Estrellas: 1,056
+Dispersión 14299-result.csv vel_rad: 65.9 km/s | Estrellas: 966       ### 14200 to 14299 parsecs
+Dispersión 14399-result.csv vel_rad: 69.1 km/s | Estrellas: 865
+Dispersión 14499-result.csv vel_rad: 66.6 km/s | Estrellas: 798
+Dispersión 14599-result.csv vel_rad: 69.9 km/s | Estrellas: 731
+Dispersión 14699-result.csv vel_rad: 69.8 km/s | Estrellas: 643
+Dispersión 14799-result.csv vel_rad: 70.1 km/s | Estrellas: 577
+Dispersión 14899-result.csv vel_rad: 72.4 km/s | Estrellas: 560
+Dispersión 14999-result.csv vel_rad: 71.5 km/s | Estrellas: 544
+Dispersión 4099-result.csv vel_rad: 64.7 km/s | Estrellas: 2,073
+Dispersión 4199-result.csv vel_rad: 69.7 km/s | Estrellas: 2,320
+Dispersión 4299-result.csv vel_rad: 67.0 km/s | Estrellas: 2,620
+Dispersión 4399-result.csv vel_rad: 63.5 km/s | Estrellas: 2,898
+Dispersión 4499-result.csv vel_rad: 65.4 km/s | Estrellas: 3,262
+Dispersión 4599-result.csv vel_rad: 64.2 km/s | Estrellas: 3,717
+Dispersión 4699-result.csv vel_rad: 63.2 km/s | Estrellas: 4,114
+Dispersión 4799-result.csv vel_rad: 63.1 km/s | Estrellas: 4,842
+Dispersión 4899-result.csv vel_rad: 65.2 km/s | Estrellas: 5,173
+Dispersión 4999-result.csv vel_rad: 64.2 km/s | Estrellas: 5,902
+Dispersión 5099-result.csv vel_rad: 63.1 km/s | Estrellas: 6,608
+Dispersión 5199-result.csv vel_rad: 62.3 km/s | Estrellas: 7,508
+Dispersión 5299-result.csv vel_rad: 62.5 km/s | Estrellas: 8,522
+Dispersión 5399-result.csv vel_rad: 64.0 km/s | Estrellas: 9,540
+Dispersión 5499-result.csv vel_rad: 62.5 km/s | Estrellas: 10,909
+Dispersión 5599-result.csv vel_rad: 62.4 km/s | Estrellas: 12,026
+Dispersión 5699-result.csv vel_rad: 61.5 km/s | Estrellas: 13,643
+Dispersión 5799-result.csv vel_rad: 62.2 km/s | Estrellas: 15,568
+Dispersión 5899-result.csv vel_rad: 60.9 km/s | Estrellas: 17,651
+Dispersión 5999-result.csv vel_rad: 60.6 km/s | Estrellas: 19,673
+Dispersión 6099-result.csv vel_rad: 67.4 km/s | Estrellas: 4,244
+Dispersión 6199-result.csv vel_rad: 63.5 km/s | Estrellas: 4,816
+Dispersión 6299-result.csv vel_rad: 63.0 km/s | Estrellas: 5,373
+Dispersión 6399-result.csv vel_rad: 61.2 km/s | Estrellas: 6,120
+Dispersión 6499-result.csv vel_rad: 68.2 km/s | Estrellas: 1,868
+Dispersión 6599-result.csv vel_rad: 59.7 km/s | Estrellas: 7,769
+Dispersión 6699-result.csv vel_rad: 58.3 km/s | Estrellas: 8,718
+Dispersión 6799-result.csv vel_rad: 56.8 km/s | Estrellas: 9,891
+Dispersión 6899-result.csv vel_rad: 54.5 km/s | Estrellas: 11,406
+Dispersión 6999-result.csv vel_rad: 52.8 km/s | Estrellas: 13,318
+Dispersión 7099-result.csv vel_rad: 30.7 km/s | Estrellas: 7,874    ### 7000 to 7099 parsecs
+Dispersión 7199-result.csv vel_rad: 30.5 km/s | Estrellas: 11,710
+Dispersión 7299-result.csv vel_rad: 32.8 km/s | Estrellas: 15,930
+Dispersión 7399-result.csv vel_rad: 30.2 km/s | Estrellas: 26,986
+Dispersión 7499-result.csv vel_rad: 30.5 km/s | Estrellas: 38,351
+Dispersión 7599-result.csv vel_rad: 30.1 km/s | Estrellas: 51,521
+Dispersión 7699-result.csv vel_rad: 30.0 km/s | Estrellas: 66,513
+Dispersión 7799-result.csv vel_rad: 29.8 km/s | Estrellas: 84,088
+Dispersión 7899-result.csv vel_rad: 29.5 km/s | Estrellas: 100,000
+Dispersión 7999-result.csv vel_rad: 29.6 km/s | Estrellas: 100,000
+Dispersión 8099-result.csv vel_rad: 27.3 km/s | Estrellas: 9,418
+Dispersión 8199-result.csv vel_rad: 29.8 km/s | Estrellas: 10,606
+Dispersión 8299-result.csv vel_rad: 30.4 km/s | Estrellas: 9,103
+Dispersión 8399-result.csv vel_rad: 31.9 km/s | Estrellas: 6,224
+Dispersión 8499-result.csv vel_rad: 31.9 km/s | Estrellas: 4,601
+Dispersión 8599-result.csv vel_rad: 34.1 km/s | Estrellas: 4,394
+Dispersión 8699-result.csv vel_rad: 32.8 km/s | Estrellas: 3,671
+Dispersión 8799-result.csv vel_rad: 32.4 km/s | Estrellas: 4,331
+Dispersión 8899-result.csv vel_rad: 31.6 km/s | Estrellas: 2,561
+Dispersión 8999-result.csv vel_rad: 30.5 km/s | Estrellas: 1,097
+Dispersión 9099-result.csv vel_rad: 37.4 km/s | Estrellas: 11,940
+Dispersión 9199-result.csv vel_rad: 37.4 km/s | Estrellas: 8,388
+Dispersión 9299-result.csv vel_rad: 38.4 km/s | Estrellas: 6,274
+Dispersión 9399-result.csv vel_rad: 38.0 km/s | Estrellas: 4,798
+Dispersión 9499-result.csv vel_rad: 40.0 km/s | Estrellas: 3,965
+Dispersión 9599-result.csv vel_rad: 39.7 km/s | Estrellas: 4,446
+Dispersión 9699-result.csv vel_rad: 40.7 km/s | Estrellas: 3,788
+Dispersión 9799-result.csv vel_rad: 41.4 km/s | Estrellas: 3,441
+Dispersión 9899-result.csv vel_rad: 44.0 km/s | Estrellas: 4,045
+Dispersión 9999-result.csv vel_rad: 44.6 km/s | Estrellas: 3,824  
+
+Special file for kpc > 15 
+Dispersión vel_rad: 74.7 km/s | Estrellas: 810
+
+
+
