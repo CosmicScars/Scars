@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from glob import glob
+# Montar Google Drive
+drive.mount('/content/drive')
 
 # --- 1. CARGAR TODOS LOS ARCHIVOS ---
 files = sorted(glob('/content/drive/My Drive/GAIA/gaia-*-result.csv'))  # Ajusta la ruta
