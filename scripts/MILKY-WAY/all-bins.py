@@ -43,7 +43,7 @@ plt.legend(markerscale=5)
 plt.grid(alpha=0.2)
 plt.show()
 
-=========================================
+========================================= SOLO DESDE CENTRO GALACTICO: BARRAS ROJAS Y AZULES SEPARAS POR Y=0
 
 # Graficar la sinusoide + torres con estilo
 plt.figure(figsize=(16, 8))
