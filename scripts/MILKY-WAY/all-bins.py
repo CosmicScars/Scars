@@ -15,17 +15,30 @@ for file in files:
     df_list.append(df_temp)
 df_all = pd.concat(df_list, ignore_index=True)
 
+
 # --- 2. CORRECCIÓN OPcional DE V_RAD (SOL → CENTRO) ---
 df_all['v_rad_centro'] = df_all['vel_rad_km_s'] + 230 * np.cos(np.radians(df_all['l'])) * np.cos(np.radians(df_all['b']))
+
 
 # --- 3. GRÁFICO SINUSOIDE SCARS (V_rad vs Distancia) ---
 plt.figure(figsize=(15, 6))
 
 # Opción A: V_rad respecto al Sol (sin corregir)
-plt.scatter(df_all['bin_kpc'], df_all['vel_rad_km_s'], s=1, alpha=0.3, label='V_rad (Sol)', color='blue')
+# plt.scatter(df_all['bin_kpc'], df_all['vel_rad_km_s'], s=1, alpha=0.3, label='V_rad (Sol)', color='blue')
 
 # Opción B: V_rad respecto al centro (corregida)
-plt.scatter(df_all['bin_kpc'], df_all['v_rad_centro'], s=1, alpha=0.3, label='V_rad (Centro)', color='red')
+# plt.scatter(df_all['bin_kpc'], df_all['v_rad_centro'], s=1, alpha=0.3, label='V_rad (Centro)', color='red')
+
+
+# Gráfica V_rad (Centro Galáctico vs Solar)
+plt.scatter(df_all['bin_kpc'], df_all['v_rad_centro'], 
+            c='#4B0092',  # Púrpura oscuro (Centro)
+            s=1, alpha=0.3, label='$V_{\\mathrm{rad}}$ (Galactic Center)')
+
+plt.scatter(df_all['bin_kpc'], df_all['vel_rad_km_s'], 
+            c='#D55E00',  # Naranja (Solar)
+            s=1, alpha=0.3, label='$V_{\\mathrm{rad}}$ (Solar Frame)')
+
 
 # Ajuste teórico Scars (λ=3.2 kpc)
 r_range = np.linspace(4, 15, 100)
@@ -56,6 +69,12 @@ plt.plot(r_range, 20 * np.sin(2 * np.pi * r_range / 3.2), 'k-', lw=3, label='Sca
 plt.scatter(df_all['bin_kpc'], df_all['vel_rad_km_s'], 
             c=np.where(df_all['vel_rad_km_s'] < 0, 'blue', 'red'), 
             s=1, alpha=0.1, label='Star Towers (V_rad)')
+
+# Add these to your plot for clearer interpretation:
+plt.axhline(0, color='gray', ls='--', alpha=0.5)  # Reference zero-velocity line
+plt.axvline(7.1, color='green', alpha=0.3, lw=10)  # Highlight the 7-8 kpc "well"
+plt.text(7.5, -100, 'Scar Well\n(σ_v=30 km/s)', ha='center') 
+
 
 # 3. Ajustar ejes para destacar patrones
 plt.ylim(-250, 250)
