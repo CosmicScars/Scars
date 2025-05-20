@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from glob import glob
+
 # Montar Google Drive
 drive.mount('/content/drive')
 
@@ -30,13 +31,17 @@ plt.scatter(df_all['bin_kpc'], df_all['v_rad_centro'], s=1, alpha=0.3, label='V_
 r_range = np.linspace(4, 15, 100)
 plt.plot(r_range, 20 * np.sin(2 * np.pi * r_range / 3.2), 'k-', label='Scars (λ=3.2 kpc)', lw=2)
 
+# Add these to your plot for clearer interpretation:
+plt.axhline(0, color='gray', ls='--', alpha=0.5)  # Reference zero-velocity line
+plt.axvline(7.1, color='green', alpha=0.3, lw=10)  # Highlight the 7-8 kpc "well"
+plt.text(7.5, -100, 'Scar Well\n(σ_v=30 km/s)', ha='center') 
+
 plt.xlabel('Distancia al Centro Galáctico (kpc)')
 plt.ylabel('Velocidad Radial (km/s)')
 plt.title('SINUSOIDE SCARS EN TODOS LOS BINS (4-15 kpc)', pad=20)
 plt.legend(markerscale=5)
 plt.grid(alpha=0.2)
 plt.show()
-
 
 =========================================
 
