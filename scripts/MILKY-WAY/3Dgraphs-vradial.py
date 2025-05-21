@@ -220,8 +220,8 @@ else:
     print("❌ No se generaron frames. Verifica los paths de los archivos CSV.")
 
 =============================================================================================
-CODE FOR WEYL BRIDGE
-
+CODE FOR WEYL BRIDGE 1
+=============================================================================================
 
 import pandas as pd
 import numpy as np
@@ -306,4 +306,103 @@ plt.savefig("weyl_bridge.png", dpi=300)
 
 
 analizar_tramo(RANGO_KPC)
+
+=============================================================================================
+CODE FOR WEYL BRIDGE 2
+=============================================================================================
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from google.colab import drive
+import glob
+import re
+
+
+# Configuración interactiva (¡EDITA ESTO!)
+RANGO_KPC = (4.0, 20.0)  # 🌟 Rango completo del puente
+VEL_MAX_KM_S = 40        
+MUESTREO = 0.5           # 🌟 Fracción de datos a plotear (reduce sobrecarga)
+
+
+# Montar Google Drive
+drive.mount('/content/drive')
+
+
+def cargar_datos(rango_kpc):
+    # Convertir kpc a pc
+    rango_pc = (int(rango_kpc[0]*1000), int(rango_kpc[1]*1000))
+   
+    # Cargar archivos del rango
+    files = []
+    for pc in range(rango_pc[0], rango_pc[1], 100):
+        files += glob.glob(f'/content/drive/My Drive/GAIA/gaia-{pc}-{pc+99}-result.csv')
+   
+    # Manejar caso especial >15kpc
+    if rango_kpc[1] > 15:
+        files += glob.glob('/content/drive/My Drive/GAIA/gaia-14999-result.csv')
+   
+    dfs = []
+    for file in files:
+        df = pd.read_csv(file)
+        # Extraer distancia del nombre del archivo
+        if '14999' in file:
+            df['dist_centro_kpc'] = 15.5  # Centro >15kpc
+        else:
+            pc_min = int(re.search(r'gaia-(\d+)', file).group(1))
+            df['dist_centro_kpc'] = (pc_min + 50) / 1000  # Centro del bin en kpc
+        dfs.append(df)
+   
+    if not dfs:
+        print(f"❌ No hay archivos en el rango {rango_kpc[0]}-{rango_kpc[1]} kpc")
+        return None
+   
+    return pd.concat(dfs)
+
+
+def analizar_tramo(rango_kpc):
+    data = cargar_datos(rango_kpc)
+    if data is None:
+        return
+   
+    print(f"⭐ Analizando {len(data)} estrellas en {rango_kpc[0]}-{rango_kpc[1]} kpc")
+   
+def plot_puente_weyl(rango_kpc):
+    data = cargar_datos(rango_kpc)
+    if data is None:
+        return
+    
+    # 🌟 Muestreo aleatorio para evitar colapso de memoria
+    data = data.sample(frac=MUESTREO, random_state=42)  # Aleatorio pero reproducible
+    
+    # Configurar figura 3D
+    fig = plt.figure(figsize=(18, 12))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # 🌟 Ajuste de tamaño/transparencia para claridad
+    sc = ax.scatter(
+        data['l'], data['b'], data['dist_centro_kpc'],
+        c=data['vel_rad_km_s'], cmap='coolwarm', 
+        s=0.3, alpha=0.5,  # 🌟 Puntos más pequeños y transparentes
+        vmin=-VEL_MAX_KM_S, vmax=VEL_MAX_KM_S
+    )
+    
+    # Etiquetas y estilo
+    ax.set_xlabel('Longitud galáctica (l)', fontsize=12)
+    ax.set_ylabel('Latitud galáctica (b)', fontsize=12)
+    ax.set_zlabel('Distancia al centro (kpc)', fontsize=12)
+    plt.colorbar(sc, label='Velocidad radial (km/s)')
+    
+    # 🌟 Ángulo de vista óptimo para ver el puente
+    ax.view_init(elev=15, azim=-45)  # Perspectiva "desde arriba"
+    
+    # Título y guardado
+    plt.title(f'Puente de Weyl Galáctico ({rango_kpc[0]}-{rango_kpc[1]} kpc)', pad=20)
+    plt.savefig('figures/scars_bridge.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+# Ejecutar (¡esto generará el PNG!)
+plot_puente_weyl(RANGO_KPC)
 
