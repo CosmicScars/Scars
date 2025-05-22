@@ -406,13 +406,14 @@ def plot_puente_weyl(rango_kpc):
 # Ejecutar (¡esto generará el PNG!)
 plot_puente_weyl(RANGO_KPC)
 
-========================================================================================
-ROTATIONAL BRIDGE 3D:
-=========================================================================================
 
+===============================================================
+ROTATIONAL BRIDGE 3D:
+============================================================
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from google.colab import drive
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML
@@ -508,4 +509,144 @@ HTML(ani.to_jshtml())  # Para previsualizar en Colab
 # Guardar (requiere ffmpeg)
 ani.save('weyl_bridge_rotation.gif', writer='ffmpeg', dpi=120, fps=8)
 print("¡GIF guardado como 'weyl_bridge_rotation.gif'!")
+!cp weyl_bridge_rotation.gif '/content/drive/My Drive/GAIA/'
+
+
+
+
+
+
+
+
+===============================================================
+ROTATIONAL BRIDGE 3D:  improved
+============================================================
+import pandas as pd
+import numpy as np
+from google.colab import drive
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+from matplotlib.patches import Circle
+import glob
+import re
+
+
+# Montar Google Drive
+drive.mount('/content/drive')
+
+
+# Configuración
+RANGO_KPC = (4.0, 15.0)  # Rango completo del puente
+VEL_MAX_KM_S = 40         # Límite de velocidad
+MUESTREO = 0.3            # Fracción de datos para el GIF (balance velocidad/calidad)
+
+
+# Cargar datos (usa tu función original)
+def cargar_datos(rango_kpc):
+    # Convertir kpc a pc
+    rango_pc = (int(rango_kpc[0]*1000), int(rango_kpc[1]*1000))
+   
+    # Cargar archivos del rango
+    files = []
+    for pc in range(rango_pc[0], rango_pc[1], 100):
+        files += glob.glob(f'/content/drive/My Drive/GAIA/gaia-{pc}-{pc+99}-result.csv')
+   
+    # Manejar caso especial >15kpc
+    if rango_kpc[1] > 15:
+        files += glob.glob('/content/drive/My Drive/GAIA/gaia-14999-result.csv')
+   
+    dfs = []
+    for file in files:
+        df = pd.read_csv(file)
+        # Extraer distancia del nombre del archivo
+        if '14999' in file:
+            df['dist_centro_kpc'] = 15.5  # Centro >15kpc
+        else:
+            pc_min = int(re.search(r'gaia-(\d+)', file).group(1))
+            df['dist_centro_kpc'] = (pc_min + 50) / 1000  # Centro del bin en kpc
+        dfs.append(df)
+   
+    if not dfs:
+        print(f"❌ No hay archivos en el rango {rango_kpc[0]}-{rango_kpc[1]} kpc")
+        return None
+   
+    return pd.concat(dfs)
+
+
+
+
+def analizar_tramo(rango_kpc):
+    data = cargar_datos(rango_kpc)
+    if data is None:
+        return
+   
+    print(f"⭐ Analizando {len(data)} estrellas en {rango_kpc[0]}-{rango_kpc[1]} kpc")
+
+
+data = cargar_datos(RANGO_KPC).sample(frac=MUESTREO, random_state=42)
+
+
+# Crear figura 3D
+fig = plt.figure(figsize=(14, 10))
+ax = fig.add_subplot(111, projection='3d')
+# sc = ax.scatter([], [], [], s=0.5, alpha=0.7)  # Inicialización vacía
+# Scatter plot con mapa de colores personalizado
+sc = ax.scatter(
+    data['l'], data['b'], data['dist_centro_kpc'],
+    c=data['vel_rad_km_s'], 
+    cmap='coolwarm', 
+    s=0.5, 
+    alpha=0.7,
+    vmin=-60,  # Fuerza el rango para eliminar verdes/amarillos
+    vmax=60
+)
+# Barra de colores profesional
+cbar = fig.colorbar(sc, ax=ax, shrink=0.6, pad=0.1)
+cbar.set_label('Velocidad Radial (km/s)', fontsize=12)
+cbar.ax.tick_params(labelsize=10)
+
+
+# Círculo animado en 7-8 kpc (zona de alta densidad)
+circle = Circle((0, 0), radius=10, edgecolor='lime', facecolor='none', lw=2)
+ax.add_patch(circle)
+circle.set_visible(False)  # Inicialmente oculto
+
+
+
+
+# Configuración de ejes
+ax.set_xlim(data['l'].min(), data['l'].max())
+ax.set_ylim(data['b'].min(), data['b'].max())
+ax.set_zlim(RANGO_KPC[0], RANGO_KPC[1])
+ax.set_xlabel('Longitud galáctica (l)')
+ax.set_ylabel('Latitud galáctica (b)')
+ax.set_zlabel('Distancia al centro (kpc)')
+
+
+# Función de animación
+def update(frame):
+    ax.view_init(elev=20, azim=frame)
+    
+    # Mover el círculo a la zona de densidad máxima (7-8 kpc)
+    if 70 <= frame <= 110:  # Solo visible en cierto ángulo
+        circle.set_visible(True)
+        circle.center = (0, 7.5)  # Posición (l, b) aproximada
+    else:
+        circle.set_visible(False)
+    
+    return sc, circle
+
+
+
+
+
+
+
+
+# Generar GIF
+ani = FuncAnimation(fig, update, frames=np.arange(0, 360, 5), interval=100)
+ani.save('weyl_bridge_enhanced.gif', writer='ffmpeg', dpi=150, fps=10)
+print("¡GIF guardado como 'weyl_bridge_rotation2.gif'!")
 !cp weyl_bridge_rotation.gif '/content/drive/My Drive/GAIA/'
