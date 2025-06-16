@@ -1,0 +1,2 @@
+Try to find cercle patterns as explained in the paper
+Award: mention in next version
